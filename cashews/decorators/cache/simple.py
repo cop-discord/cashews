@@ -46,18 +46,18 @@ def cache(
         async def _wrap(*args, **kwargs):
             _tags = [get_cache_key(func, tag, args, kwargs) for tag in tags]
             _cache_key = get_cache_key(func, _key_template, args, kwargs)
-
-            cached = await backend.get(_cache_key, default=_empty)
-            if cached is not _empty:
-                _ttl = ttl_to_seconds(ttl, *args, **kwargs, result=cached, with_callable=True)
-                context_cache_detect._set(
-                    _cache_key,
-                    ttl=_ttl,
-                    name="simple",
-                    template=_key_template,
-                    value=cached,
-                )
-                return return_or_raise(cached)
+            if not kwargs.pop("cached", True) is False:
+                cached = await backend.get(_cache_key, default=_empty)
+                if cached is not _empty:
+                    _ttl = ttl_to_seconds(ttl, *args, **kwargs, result=cached, with_callable=True)
+                    context_cache_detect._set(
+                        _cache_key,
+                        ttl=_ttl,
+                        name="simple",
+                        template=_key_template,
+                        value=cached,
+                    )
+                    return return_or_raise(cached)
             _exc = None
             try:
                 result = await func(*args, **kwargs)
